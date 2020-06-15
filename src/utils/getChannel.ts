@@ -1,4 +1,4 @@
-import { Guild, GuildChannel, TextChannel, VoiceChannel, NewsChannel, StoreChannel, CategoryChannel } from 'discord.js'
+import { Guild } from 'discord.js'
 
 import { DiscordChannel } from './DiscordChannel';
 
