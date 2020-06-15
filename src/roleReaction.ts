@@ -63,8 +63,7 @@ export class roleReaction
         this.reacted = [];
 
         this.message.react(this.emoji);
-
-        
+ 
         this.update();
     }
 
