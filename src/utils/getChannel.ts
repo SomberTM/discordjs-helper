@@ -1,4 +1,4 @@
-import { Guild } from 'discord.js'
+import { Guild, GuildChannel } from 'discord.js'
 
 import { DiscordChannel } from './DiscordChannel';
 
