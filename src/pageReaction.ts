@@ -1,6 +1,7 @@
 import { Message, EmojiIdentifierResolvable, MessageReaction, User, PartialUser, MessageEmbed, Client } from 'discord.js'
 
 let _client: Client;
+let initialized: boolean = false;
 let pageReactions: pageReaction[] = [];
 
 export class pageReaction
@@ -45,13 +46,26 @@ export class pageReaction
 
             pageReactions.push(this);
 
+            if (!initialized) { this.secondHandInit(); }
         }
     }
 
     public static init(client: Client) {
         _client = client;
-        console.log(`[INFO]: Page reactions initialized`);
+        console.log(`discordjs-helper -> [INFO]: Page reactions initialized`);
         listen();
+        initialized = true;
+    }
+
+    public static reactions(): pageReaction[] {
+        return pageReactions;
+    }
+
+    private secondHandInit() {
+        _client = this.message.client;
+        console.log(`discordjs-helper -> [INFO]: Page reactions initialized`);
+        listen();
+        initialized = true;
     }
 
     public updateAdd(messageReaciton: MessageReaction, user: User | PartialUser)
@@ -136,7 +150,7 @@ export class pageReaction
 }
 
 function listen() {
-    console.log(`[INFO]: Listening on page reactions`);
+    console.log(`discordjs-helper -> [INFO]: Listening on page reactions`);
     _client.on('messageReactionAdd', (messageReaction: MessageReaction, user: User | PartialUser) => {
         if (user.bot) return;
         pageReactions.forEach((reaction: pageReaction) => {

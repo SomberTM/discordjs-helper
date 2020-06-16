@@ -1,4 +1,8 @@
-import { EmojiIdentifierResolvable, Role, Message, GuildMember, MessageReaction, User, PartialUser } from 'discord.js'
+import { EmojiIdentifierResolvable, Role, Message, GuildMember, MessageReaction, User, PartialUser, Client } from 'discord.js'
+
+let _client: Client;
+let initialized: boolean = false;
+let roleReactions: roleReaction[] = [];
 
 /** CLASS : roleReaction
  * 
@@ -29,7 +33,6 @@ import { EmojiIdentifierResolvable, Role, Message, GuildMember, MessageReaction,
  * 
  */
 
-export type roleReactionOptions = { use_listener: boolean };
 
 export class roleReaction
 {
@@ -37,8 +40,6 @@ export class roleReaction
     public readonly emoji: EmojiIdentifierResolvable
     public readonly message: Message
     public readonly role: Role
-
-    private options: roleReactionOptions;
 
     /**
      * @constructor 
@@ -52,10 +53,8 @@ export class roleReaction
      *   @type Discord.Role
      * 
      */
-    constructor(messageToReactTo: Message, emojiReaction: EmojiIdentifierResolvable, roleReactor: Role, options?: roleReactionOptions)
+    constructor(messageToReactTo: Message, emojiReaction: EmojiIdentifierResolvable, roleReactor: Role)
     {
-        this.options = options ? options : { use_listener : true };
-
         this.message = messageToReactTo;
         this.emoji = emojiReaction.toString();
         this.role = roleReactor;
@@ -64,28 +63,27 @@ export class roleReaction
 
         this.message.react(this.emoji);
  
-        this.update();
+        roleReactions.push(this);
+        
+        if (!initialized) { this.secondHandInit(); }
     }
 
-    private update()
-    {
-      if (this.options.use_listener) 
-          this.message.client.on('messageReactionAdd', (messageReaction: MessageReaction, user: User | PartialUser) => {
-              if (!this.options.use_listener) return;
-              if (user.bot) return;
-                  if (this.isReactedTo(messageReaction)) {
-                      this.addRole(messageReaction.message.guild!.member(<User>user)!);
-                  }  
-          });
+    public static init(client: Client) {
+        _client = client;
+        console.log(`[INFO]: Role reactions initialized`);
+        listen();
+        initialized = true;
+    }
 
-          this.message.client.on('messageReactionRemove', (messageReaction: MessageReaction, user: User | PartialUser) => {
-            if (!this.options.use_listener) return;
-            if (user.bot) return;
-                if (this.isReactedTo(messageReaction)) {
-                    this.removeRole(messageReaction.message.guild!.member(<User>user)!);
-                }
-          });
-      
+    public static reactions(): roleReaction[] {
+      return roleReactions;
+    }
+
+    private secondHandInit() {
+        _client = this.message.client;
+        console.log(`[INFO]: Role reactions initialized`);
+        listen();     
+        initialized = true;
     }
 
     public addRole(member: GuildMember)
@@ -118,11 +116,6 @@ export class roleReaction
         roleReactionHelp();
     }
 
-    set setOptions(new_options: roleReactionOptions)
-    {
-        this.options = new_options;
-    }
-
     get reactedUsers(): GuildMember[]
     {
       return this.reacted;
@@ -145,6 +138,25 @@ export class roleReaction
 
 }
 
+function listen() {
+  _client.on('messageReactionAdd', (messageReaction: MessageReaction, user: User | PartialUser) => {
+      if (user.bot) return;
+      roleReactions.forEach((reaction: roleReaction) => {
+        if (reaction.isReactedTo(messageReaction)) {
+          reaction.addRole(messageReaction.message.guild!.member(<User>user)!);
+        }
+      })
+  });
+
+  _client.on('messageReactionRemove', (messageReaction: MessageReaction, user: User | PartialUser) => {
+      if (user.bot) return;
+      roleReactions.forEach((reaction: roleReaction) => {
+        if (reaction.isReactedTo(messageReaction)) {
+          reaction.removeRole(messageReaction.message.guild!.member(<User>user)!);
+        }
+      })
+  }); 
+}
 
 function roleReactionHelp()
 {

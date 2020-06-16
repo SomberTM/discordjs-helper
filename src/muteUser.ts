@@ -17,12 +17,9 @@ export async function muteUser(to_mute: GuildMember, time_seconds: number, fn?: 
 {
     //if (!to_mute.permissions.has('MUTE_MEMBERS')) return;
     if (!muteRole) {
-        console.log(`No muteRole provided, attempting to find one`);
         let mutedRole: Role | undefined = to_mute.guild.roles.cache.find((role: Role) => role.name == 'muted');
         if (mutedRole == undefined) {
-            console.log(`Couldnt find role 'muted'`);
             try {
-                console.log(`Creating muted role`);
                 mutedRole = await to_mute.guild.roles.create({
                     data: {
                         name: 'muted',
@@ -102,4 +99,9 @@ function checkChannelPermissions(guild: Guild, muteRole_ID: string)
             }]
         );       
     })
+}
+
+export default {
+    muteUser,
+    unmuteUser
 }

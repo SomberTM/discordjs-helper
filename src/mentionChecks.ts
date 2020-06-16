@@ -101,3 +101,12 @@ export function isMention(mention: string): boolean
 {
     return mention.includes("<") && mention.includes(">") && mention.length > 15 ? true : false;
 }
+
+export default {
+    isMember,
+    isChannel,
+    isRole,
+    isEveryone,
+    isHere,
+    isMention
+}

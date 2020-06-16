@@ -17,7 +17,7 @@ import { getChannel } from './utils/getChannel'
  * @return { GuildChannel[] | undefined } found channels
  * 
  */
-export function findChannel(access: string, guild: Guild, query: string[], cb?: (channel: Array<DiscordChannel | undefined>) => void): Array<DiscordChannel | undefined>
+export function findChannels(access: string, guild: Guild, query: string[], cb?: (channel: Array<DiscordChannel | undefined>) => void): Array<DiscordChannel | undefined>
 {
     let found: Array<DiscordChannel | undefined> = [];
 
