@@ -1,6 +1,5 @@
 import path from 'path';
 import fs from 'fs';
-import { type } from 'os';
 
 export type registryType =  {
     ts: string,
