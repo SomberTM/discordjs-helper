@@ -87,14 +87,14 @@ function muteTimeout(to_mute: GuildMember, muteRole: Role, time_seconds: number,
     }, time_seconds*1000); 
 }
 
-function checkChannelPermissions(guild: Guild, muteRole_ID: string)
+function checkChannelPermissions(guild: Guild, muteRole_id: string)
 {
     [...guild.channels.cache.array()].forEach((channel: GuildChannel) => {
         channel.overwritePermissions([
             ...channel.permissionOverwrites.array(), 
             {
                 type: 'role',
-                id: muteRole_ID,
+                id: muteRole_id,
                 deny: 'SEND_MESSAGES'
             }]
         );       
