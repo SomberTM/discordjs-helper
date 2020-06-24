@@ -114,6 +114,19 @@ type ColorResolvable = {
     REMOVE: string
 }
 
+export const ColorResolvables: ColorResolvable = {
+    INFO: 'info',
+    UPDATE: 'update',
+    KICK: 'kick',
+    BAN: 'ban',
+    JOIN: 'join',
+    LEAVE: 'leave',
+    DELETE: 'delete',
+    CREATE: 'create',
+    ADD: 'add',
+    REMOVE: 'remove'
+}
+
 /**
  * Just a type for the structure rateLimit info
  */
@@ -148,18 +161,7 @@ export class Logger {
         if (!this.options.channels) { this.options.channels = undefined; }
         if (!this.options.blacklisted_events) { this.options.blacklisted_events = Logger.defaultBlacklistedEvents(); }
         
-        this.ColorResolvables = {
-            INFO: 'info',
-            UPDATE: 'update',
-            KICK: 'kick',
-            BAN: 'ban',
-            JOIN: 'join',
-            LEAVE: 'leave',
-            DELETE: 'delete',
-            CREATE: 'create',
-            ADD: 'add',
-            REMOVE: 'remove'
-        }
+        this.ColorResolvables = ColorResolvables;
 
     }
 
@@ -581,18 +583,41 @@ export class Logger {
         return this.options.colors!.default!;
     }
 
+    /**
+     * Will log to a guilds logging channel if this logger contains one associated with the given guild id
+     * 
+     * @param guild_id The guild you want to log to
+     * @param info The stuff you want to log (string or message embed)
+     * @param embedColor [OPTIONAL] The color of the embed if there is one 
+     */
+    public toGuild(guild_id: string, info: string | MessageEmbed, embedColor?: string) {
+        if (this._LoggingChannel(guild_id)) {
+            let logChannel: TextChannel = this._findLoggingChannel(guild_id)!;
+            if (embedColor) {
+                let color: string = this._isHex(embedColor) ? embedColor : this._resolveColor(embedColor);
+                if (typeof info == typeof MessageEmbed) (<MessageEmbed>info).setColor(color);
+            }
+
+            logChannel.send(info)
+        }
+    }
+
+    public info(info: string) {
+        if (this._LoggingConsole()) { console.log(`[INFO]: ${info}`) }
+    }
+
     /* All Discord.js Client Events */
 
-    public channelCreate(channel: GuildChannel | DMChannel, cb?: (channel: DiscordChannel) => void): void {
+    public channelCreate(channel: GuildChannel | DMChannel, cb?: (logChannel: TextChannel, color: string, channel?: DiscordChannel) => void): void {
         if (this._isBlacklisted('channelCreate')) return;
         if (typeof channel == typeof DMChannel) return;
         
         let _channel: DiscordChannel = (<DiscordChannel>channel) ;
-        if (this._LoggingConsole()) { console.log(`[EVENT][CHANNEL_CREATE][INFO]: Name: '${_channel.name}' | Guild '${_channel.guild.name  }' | Type: '${_channel.type}' | Parent: '${_channel.parent?.name}' | Permissions (First 5): '${_channel.permissionOverwrites.first(5)}'`); }
-        if (this._usingCallbacks() && cb != undefined) { cb(_channel); return; }
+        if (this._LoggingConsole()) { console.log(`[EVENT][CHANNEL_CREATE][INFO]: Name: '${_channel.name}' | Guild '${_channel.guild.name  }' | Type: '${_channel.type}' | Parent: '${_channel.parent?.name}' | Permissions (First 5): '${_channel.permissionOverwrites.first(5)}'`); }   
         if (this._LoggingChannel(_channel.guild.id)) { 
             let logChannel: TextChannel = this._findLoggingChannel(_channel.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.CREATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, _channel); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -605,7 +630,7 @@ export class Logger {
         }
     }
 
-    public channelDelete(channel: GuildChannel | DMChannel): void {
+    public channelDelete(channel: GuildChannel | DMChannel, cb?: (logChannel: TextChannel, color: string, channel?: DiscordChannel) => void): void {
         if (this._isBlacklisted('channelDelete')) return;
         if (typeof channel == typeof DMChannel) return;
 
@@ -614,6 +639,7 @@ export class Logger {
         if (this._LoggingChannel(_channel.guild.id)) { 
             let logChannel: TextChannel = this._findLoggingChannel(_channel.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.DELETE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, _channel); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -626,7 +652,7 @@ export class Logger {
         }
     }
 
-    public channelPinsUpdate(channel: GuildChannel | DMChannel , time: Date): void {
+    public channelPinsUpdate(channel: GuildChannel | DMChannel , time: Date, cb?: (logChannel: TextChannel, color: string, channel?: DiscordChannel, time?: Date) => void): void {
         if (this._isBlacklisted('channelPinsUpdate')) return;
         if (typeof channel == typeof DMChannel) return;
 
@@ -635,6 +661,7 @@ export class Logger {
         if (this._LoggingChannel(_channel.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(_channel.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, _channel, time); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -647,7 +674,7 @@ export class Logger {
         }
     }    
 
-    public channelUpdate(oldChannel: GuildChannel | DMChannel, newChannel: GuildChannel | DMChannel): void {
+    public channelUpdate(oldChannel: GuildChannel | DMChannel, newChannel: GuildChannel | DMChannel, cb?: (logChannel: TextChannel, color: string, oldChannel?: DiscordChannel, newChannel?: DiscordChannel) => void): void {
         if (this._isBlacklisted('channelUpdate')) return;
         if (typeof oldChannel == typeof DMChannel && typeof newChannel == typeof DMChannel) return;
 
@@ -659,6 +686,7 @@ export class Logger {
         if (this._LoggingChannel(_newChannel.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(_newChannel.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, _oldChannel, _newChannel); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -677,7 +705,7 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][DEBUG][INFO]: ${info}`); }
     }
 
-    public async emojiCreate(emoji: GuildEmoji): Promise<void> {
+    public async emojiCreate(emoji: GuildEmoji, cb?: (logChannel: TextChannel, color: string, emoji?: GuildEmoji) => void): Promise<void> {
         if (this._isBlacklisted('emojiCreate')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][EMOJI_CREATE][INFO]: Guild: ${emoji.guild.name} | Name: ${emoji.name} | Animated: ${emoji.animated} | Identifier: ${emoji.identifier}`) }
@@ -685,6 +713,7 @@ export class Logger {
             let logChannel: TextChannel = this._findLoggingChannel(emoji.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.CREATE);
             let emojiAuthor: User = await emoji.fetchAuthor();
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, emoji); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -696,7 +725,7 @@ export class Logger {
         }
     }
 
-    public async emojiDelete(emoji: GuildEmoji): Promise<void> {
+    public async emojiDelete(emoji: GuildEmoji, cb?: (logChannel: TextChannel, color: string, emoji?: GuildEmoji) => void): Promise<void> {
         if (this._isBlacklisted('emojiDelete')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][EMOJI_CREATE][INFO]: Guild: ${emoji.guild.name} | Name: ${emoji.name} | Animated: ${emoji.animated} | Identifier: ${emoji.identifier}`) }
@@ -704,6 +733,7 @@ export class Logger {
             let logChannel: TextChannel = this._findLoggingChannel(emoji.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.DELETE);
             let emojiAuthor: User = await emoji.fetchAuthor();
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, emoji); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -715,13 +745,14 @@ export class Logger {
         }
     }
 
-    public emojiUpdate(oldEmoji: GuildEmoji, newEmoji: GuildEmoji): void {
+    public emojiUpdate(oldEmoji: GuildEmoji, newEmoji: GuildEmoji, cb?: (logChannel: TextChannel, color: string, oldEmoji?: GuildEmoji, newEmoji?: GuildEmoji) => void): void {
         if (this._isBlacklisted('emojiUpdate')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][EMOJI_UPDATE][INFO]: Name: ${oldEmoji.name} -> ${newEmoji.name} | Identifier: <:${oldEmoji.identifier}> -> <:${newEmoji.identifier}>`) }
         if (this._LoggingChannel(newEmoji.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(newEmoji.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, oldEmoji, newEmoji); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -739,13 +770,14 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][ERROR][INFO]: ${error}`); }
     }
 
-    public guildBanAdd(guild: Guild, user: User): void {
+    public guildBanAdd(guild: Guild, user: User, cb?: (logChannel: TextChannel, color: string, guild?: Guild, user?: User) => void): void {
         if (this._isBlacklisted('guildBanAdd')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_BAN_ADD][INFO]: Guild: ${guild.name} | User: ${user.tag} | User ID: ${user.id}`) }
         if (this._LoggingChannel(guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.BAN);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, guild, user); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -759,13 +791,14 @@ export class Logger {
         }
     }
 
-    public guildBanRemove(guild: Guild, user: User): void {
+    public guildBanRemove(guild: Guild, user: User, cb?: (logChannel: TextChannel, color: string, guild?: Guild, user?: User) => void): void {
         if (this._isBlacklisted('guildBanRemove')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_BAN_REMOVE][INFO]: Guild: ${guild.name} | User: ${user.tag} | User ID: ${user.id}`) }
         if (this._LoggingChannel(guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.REMOVE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, guild, user); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -789,13 +822,14 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_DELETE][INFO]: Client left or was kicked from guild '${guild.name}'`); }
     }
 
-    public guildIntegrationsUpdate(guild: Guild): void {
+    public guildIntegrationsUpdate(guild: Guild, cb?: (logChannel: TextChannel, color: string, guild?: Guild) => void): void {
         if (this._isBlacklisted('guildIntegrationsUpdate')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_INTEGRATIONS_UPDATE][INFO]: Integrations updated in '${guild.name}'`) }
         if (this._LoggingChannel(guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, guild); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -808,13 +842,14 @@ export class Logger {
         }
     }
 
-    public guildMemberAdd(member: GuildMember): void {
+    public guildMemberAdd(member: GuildMember, cb?: (logChannel: TextChannel, color: string, member?: GuildMember) => void): void {
         if (this._isBlacklisted('guildMemberAdd')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_MEMBER_ADD][INFO]: Name: ${member.user.tag} | ID: ${member.user.id} | Time: ${member.joinedTimestamp}`) }
         if (this._LoggingChannel(member.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(member.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.JOIN);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, member); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -828,13 +863,14 @@ export class Logger {
         }
     }
     
-    public guildMemberRemove(member: GuildMember): void {
+    public guildMemberRemove(member: GuildMember, cb?: (logChannel: TextChannel, color: string, member?: GuildMember) => void): void {
         if (this._isBlacklisted('guildMemberRemove')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_MEMBER_REMOVE][INFO]: Name: ${member.user.tag} | ID: ${member.user.id} | Time: ${member.joinedTimestamp}`) }
         if (this._LoggingChannel(member.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(member.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.LEAVE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, member); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -848,7 +884,7 @@ export class Logger {
         }
     }
 
-    public guildMembersChunk(members: Collection<Snowflake, GuildMember>, guild: Guild): void {
+    public guildMembersChunk(members: Collection<Snowflake, GuildMember>, guild: Guild, cb?: (logChannel: TextChannel, color: string, members?: Collection<Snowflake, GuildMember>, guild?: Guild) => void): void {
         if (this._isBlacklisted('guildMembersChunk')) return;
 
         if (!members.first()) return;
@@ -857,7 +893,8 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_MEMBERS_CHUNK][INFO]: Mass amount of members joined ${joinedGuild.name} from ${guild.name} | Members: ${members.array().toString()}`); }
         if (this._LoggingChannel(joinedGuild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(joinedGuild.id)!;
-            let color: string = this._resolveColor(this.ColorResolvables.JOIN);      
+            let color: string = this._resolveColor(this.ColorResolvables.JOIN);    
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, members, guild); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -870,7 +907,7 @@ export class Logger {
         } 
     }
 
-    public guildMemberSpeaking(member: GuildMember, speaking: Speaking): void {
+    public guildMemberSpeaking(member: GuildMember, speaking: Speaking, cb?: (logChannel: TextChannel, color: string, member?: GuildMember, speaking?: Speaking) => void): void {
         if (this._isBlacklisted('guildMemberSpeaking')) return;
         
         const resolveSpeaking: Function = (speakingBitfield: number): string => {
@@ -886,6 +923,7 @@ export class Logger {
         if (this._LoggingChannel(member.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(member.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.INFO);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, member, speaking); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -896,7 +934,7 @@ export class Logger {
         }    
     }
 
-    public guildMemberUpdate(oldMember: GuildMember, newMember: GuildMember): void {
+    public guildMemberUpdate(oldMember: GuildMember, newMember: GuildMember, cb?: (logChannel: TextChannel, color: string, oldMember?: GuildMember, newMember?: GuildMember) => void): void {
         if (this._isBlacklisted('guildMemberUpdate')) return;
     
         let roles: Role[] = findMembersRolesDiffernces(oldMember, newMember);
@@ -904,6 +942,7 @@ export class Logger {
         if (this._LoggingChannel(newMember.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(newMember.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, oldMember, newMember); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -921,12 +960,25 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_UNAVAILABLE][INFO]: Guild: ${guild.name} | ID: ${guild.name} | Reason: Likely due to server outage`); }
     }
 
-    public guildUpdate(oldGuild: Guild, newGuild: Guild): void {
+    public guildUpdate(oldGuild: Guild, newGuild: Guild, cb?: (logChannel: TextChannel, color: string, oldGuild?: Guild, newGuild?: Guild) => void): void {
         if (this._isBlacklisted('guildUpdate')) return;
 
-        //Figure out changes
+        if (this._LoggingConsole()) { console.log(`[EVENT][GUILD_UPDATE][INFO]: Before: { Name: ${oldGuild.name} }, After: { Name: ${newGuild.name} }`) }
+        if (this._LoggingChannel(newGuild.id)) {
+            let logChannel: TextChannel = this._findLoggingChannel(newGuild.id)!;
+            let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, oldGuild, newGuild); return; }
 
-        if (this._LoggingConsole()) { console.log(``) }
+            logChannel.send(
+                new MessageEmbed()
+                .setColor(color)
+                .setAuthor(newGuild.name, newGuild.iconURL()!)
+                .addField(`Before`, `• Name\n\`${oldGuild.name}\``)
+                .addField(`After`, `• Name\n\`${newGuild.name}\``)
+                .setFooter(newGuild.id)
+                .setTimestamp()
+            )
+        }
     }
 
     public invalidated(): void {
@@ -937,7 +989,7 @@ export class Logger {
     /**
      * This event only triggers if the client has MANAGE_GUILD permissions for the guild, or MANAGE_CHANNEL permissions for the channel.
      */
-    public inviteCreate(invite: Invite): void {
+    public inviteCreate(invite: Invite, cb?: (logChannel: TextChannel, color: string, invite?: Invite) => void): void {
         if (this._isBlacklisted('inviteCreate')) return;
 
         let inviteLink: string = `https://discord.gg/${invite.code}`;
@@ -946,6 +998,7 @@ export class Logger {
         if (this._LoggingChannel(invite.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(invite.guild!.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.CREATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, invite); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -960,7 +1013,7 @@ export class Logger {
     /**
      * This event only triggers if the client has MANAGE_GUILD permissions for the guild, or MANAGE_CHANNEL permissions for the channel.
      */
-    public inviteDelete(invite: Invite): void {
+    public inviteDelete(invite: Invite, cb?: (logChannel: TextChannel, color: string, invite?: Invite) => void): void {
         if (this._isBlacklisted('inviteDelete')) return;
 
         let inviteLink: string = `https://discord.gg/${invite.code}` || invite.toString();
@@ -969,6 +1022,7 @@ export class Logger {
         if (this._LoggingChannel(invite.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(invite.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.DELETE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, invite); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -981,7 +1035,7 @@ export class Logger {
         }
     }
 
-    public message(message: Message): void {
+    public message(message: Message, cb?: (logChannel: TextChannel, color: string, message?: Message) => void): void {
         if (message.author.bot) return;
         if (message.channel.type == 'dm') return; //Dont log dm's
         if (this._isBlacklisted('message')) return;
@@ -992,6 +1046,7 @@ export class Logger {
         if (this._LoggingChannel(message.guild!.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(message.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.INFO);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, message); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1005,7 +1060,7 @@ export class Logger {
         }
     }
 
-    public messageDelete(message: Message): void {
+    public messageDelete(message: Message, cb?: (logChannel: TextChannel, color: string, message?: Message) => void): void {
         if (this._isBlacklisted('messageDelete')) return;
 
         let _channel: DiscordChannel = <DiscordChannel>message.channel;
@@ -1014,6 +1069,7 @@ export class Logger {
         if (this._LoggingChannel(message.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(message.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.DELETE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, message); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1026,7 +1082,7 @@ export class Logger {
         }
     }
 
-    public messageDeleteBulk(messages: Collection<Snowflake, Message>): void {
+    public messageDeleteBulk(messages: Collection<Snowflake, Message>, cb?: (logChannel: TextChannel, color: string, messages?: Collection<Snowflake, Message>) => void): void {
         if (this._isBlacklisted('messageDeleteBulk')) return;
 
         let sampler: Message = messages.first()!;
@@ -1036,6 +1092,7 @@ export class Logger {
         if (this._LoggingChannel(sampler.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(sampler.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.DELETE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, messages); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1047,7 +1104,7 @@ export class Logger {
         }
     }
 
-    public messageReactionAdd(messageReaction: MessageReaction, user: User): void {
+    public messageReactionAdd(messageReaction: MessageReaction, user: User, cb?: (logChannel: TextChannel, color: string, reaction?: MessageReaction, user?: User) => void): void {
         if (this._isBlacklisted('messageReactionAdd')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][MESSAGE_REACTION_ADD][INFO]: ${user.tag} reacted to a message with id ${messageReaction.message.id} and emoji ${messageReaction.emoji.toString()}`) }
@@ -1056,6 +1113,7 @@ export class Logger {
             let logChannel: TextChannel = this._findLoggingChannel(messageReaction.message.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.ADD);
             let message: Message = messageReaction.message;
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, messageReaction, user); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1068,7 +1126,7 @@ export class Logger {
         }
     }
 
-    public messageReactionRemove(messageReaction: MessageReaction, user: User): void {
+    public messageReactionRemove(messageReaction: MessageReaction, user: User, cb?: (logChannel: TextChannel, color: string, reaction?: MessageReaction, user?: User) => void): void {
         if (this._isBlacklisted('messageReactionRemove')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][MESSAGE_REACTION_REMOVE][INFO]: ${user.tag} removed their reaction to a message with id ${messageReaction.message.id} and emoji ${messageReaction.emoji.toString()}`) }
@@ -1077,6 +1135,7 @@ export class Logger {
             let logChannel: TextChannel = this._findLoggingChannel(messageReaction.message.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.REMOVE);
             let message: Message = messageReaction.message;
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, messageReaction, user); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1089,7 +1148,7 @@ export class Logger {
         }
     }
 
-    public messageReactionRemoveAll(message: Message) {
+    public messageReactionRemoveAll(message: Message, cb?: (logChannel: TextChannel, color: string, message: Message) => void) {
         if (this._isBlacklisted('messageReactionRemoveAll')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][MESSAGE_REACTION_REMOVE_ALL][INFO]: All reactions were removed from ${message.id}`); }
@@ -1097,6 +1156,7 @@ export class Logger {
         if (this._LoggingChannel(message.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(message.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.REMOVE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, message); return; }
             
             logChannel.send(
                 new MessageEmbed()
@@ -1109,7 +1169,7 @@ export class Logger {
         }
     }
 
-    public messageReactionRemoveEmoji(messageReaction: MessageReaction) {
+    public messageReactionRemoveEmoji(messageReaction: MessageReaction, cb?: (logChannel: TextChannel, color: string, reaction?: MessageReaction) => void) {
         if (this._isBlacklisted('messageReactionRemoveEmoji')) return;
 
         let message: Message = messageReaction.message;
@@ -1118,6 +1178,7 @@ export class Logger {
         if (this._LoggingChannel(message.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(message.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.REMOVE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, messageReaction); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1131,7 +1192,7 @@ export class Logger {
     }
 
     //Basically message edit
-    public messageUpdate(oldMessage: Message, newMessage: Message) {
+    public messageUpdate(oldMessage: Message, newMessage: Message, cb?: (logChannel: TextChannel, color: string, oldMessage?: Message, newMessage?: Message) => void) {
         if (newMessage.author.bot) return;
         if (this._isBlacklisted('messsageUpdate')) return;
 
@@ -1140,6 +1201,7 @@ export class Logger {
         if (this._LoggingChannel(newMessage.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(newMessage.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, oldMessage, newMessage); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1154,7 +1216,7 @@ export class Logger {
         }
     }
 
-    public presenceUpdate(oldPresence: Presence, newPresence: Presence) {
+    public presenceUpdate(oldPresence: Presence, newPresence: Presence, cb?: (logChannel: TextChannel, color: string, oldPresence?: Presence, newPresence?: Presence) => void) {
         if (this._isBlacklisted('presenceUpdate')) return;
 
         let oldActivites: Activity | boolean = oldPresence ? oldPresence.activities[0] : false;
@@ -1164,6 +1226,7 @@ export class Logger {
         if (this._LoggingChannel(newPresence.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(newPresence.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, oldPresence, newPresence); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1188,13 +1251,14 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][READY][INFO]: ${client.user?.tag} is ready!`) }
     }
 
-    public roleCreate(role: Role) {
+    public roleCreate(role: Role, cb?: (logChannel: TextChannel, color: string, role?: Role) => void): void {
         if (this._isBlacklisted('roleCreate')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][ROLE_CREATE][INFO]: Role created in ${role.guild.name}. Role Info: { name: ${role.name}, id: ${role.id}, permissions: ${role.permissions.toArray()}}`) }
         if (this._LoggingChannel(role.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(role.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.CREATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, role); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1210,7 +1274,7 @@ export class Logger {
         }
     }
 
-    public roleDelete(role: Role) {
+    public roleDelete(role: Role, cb?: (logChannel: TextChannel, color: string, role?: Role) => void): void {
         if (this._isBlacklisted('roleDelete')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][ROLE_DELETE][INFO]: ${role.name} was deleted in ${role.guild.name}`); }
@@ -1229,7 +1293,7 @@ export class Logger {
         }
     }
 
-    public roleUpdate(oldRole: Role, newRole: Role) {
+    public roleUpdate(oldRole: Role, newRole: Role, cb?: (logChannel: TextChannel, color: string, oldRole?: Role, newRole?: Role) => void) {
         if (this._isBlacklisted(`roleUpdate`)) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][ROLE_UPDATE][INFO]: Before: Name: ${oldRole.name}, Color: ${oldRole.hexColor}, Permissions: ${oldRole.permissions.toArray()} | After: Name: ${newRole.name}, Color: ${newRole.hexColor}, Permissions: ${newRole.permissions.toArray()}`) }
@@ -1237,6 +1301,7 @@ export class Logger {
         if (this._LoggingChannel(newRole.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(newRole.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, oldRole, newRole); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1276,7 +1341,7 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][SHARD_RECONNECTING][INFO]: Shard with id ${id} has resumed work. Total Replayed Events: ${replayedEvents}`) }
     }
 
-    public typingStart(channel: Channel, user: User) {
+    public typingStart(channel: Channel, user: User, cb?: (logChannel: TextChannel, color: string, channel?: DiscordChannel, user?: User) => void) {
         if (this._isBlacklisted('typingStart')) return;
 
         if (channel.type != 'text') return;
@@ -1286,6 +1351,7 @@ export class Logger {
         if (this._LoggingChannel(_channel.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(_channel.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.INFO);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, _channel, user); return; }
 
             logChannel.send(
                 new MessageEmbed()
@@ -1303,7 +1369,7 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][USER_UPDATE][INFO]: User updated. Before: { Username: ${oldUser.username}, Tag: ${oldUser.tag}, Avatar URL ${oldUser.avatarURL()} } | After: { Username: ${newUser.username}, Tag: ${newUser.tag}, Avatar URL: ${newUser.avatarURL()} }`) }
     }
 
-    public voiceStateUpdate(oldState: VoiceState, newState: VoiceState) {
+    public voiceStateUpdate(oldState: VoiceState, newState: VoiceState, cb?: (logChannel: TextChannel, color: string, oldState?: VoiceState, newState?: VoiceState) => void) {
         if (this._isBlacklisted('voiceStateUpdate')) return;
         
         if (!oldState.channel && !newState.channel && oldState.channel!.id == newState.channel!.id) return;
@@ -1312,6 +1378,8 @@ export class Logger {
         if (this._LoggingChannel(newState.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(newState.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, oldState, newState); return; }
+
 
             logChannel.send(
                 new MessageEmbed()
@@ -1329,13 +1397,14 @@ export class Logger {
         if (this._LoggingConsole()) { console.log(`[EVENT][WARN][INFO]: ${info}`) }
     }
 
-    public webhookUpdate(channel: TextChannel) {
+    public webhookUpdate(channel: TextChannel, cb?: (logChannel: TextChannel, color: string, channel: TextChannel) => void) {
         if (this._isBlacklisted('webhookUpdate')) return;
 
         if (this._LoggingConsole()) { console.log(`[EVENT][WEBHOOK_UPDATE][INFO]: A webhook for channel #${channel.name} was updated`) }
         if (this._LoggingChannel(channel.guild.id)) {
             let logChannel: TextChannel = this._findLoggingChannel(channel.guild.id)!;
             let color: string = this._resolveColor(this.ColorResolvables.UPDATE);
+            if (this._usingCallbacks() && cb != undefined) { cb(logChannel, color, channel); return; }
 
             logChannel.send(
                 new MessageEmbed()
