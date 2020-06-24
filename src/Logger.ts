@@ -1,5 +1,7 @@
 import { DiscordChannel } from './utils/DiscordChannel'
+import { numberID } from './utils/numberID';
 import { findMembersRolesDiffernces } from './findMembersRolesDifferences';
+
 import { 
     GuildChannel, 
     DMChannel, 
@@ -98,7 +100,8 @@ export type BlacklistedEvents = {
     userUpdate?: boolean,
     voiceStateUpdate?: boolean,
     warn?: boolean,
-    webhookUpdate?: boolean
+    webhookUpdate?: boolean,
+    [key: string]: boolean | undefined
 }
 
 type ColorResolvable = {
@@ -111,7 +114,8 @@ type ColorResolvable = {
     DELETE: string,
     CREATE: string,
     ADD: string
-    REMOVE: string
+    REMOVE: string,
+    [key: string]: string
 }
 
 export const ColorResolvables: ColorResolvable = {
@@ -144,10 +148,11 @@ export class Logger {
 
     private options: LoggerOptions;
     private ColorResolvables: ColorResolvable;
+    public readonly id: string;
 
     constructor(options?: LoggerOptions)
     {
-        
+        this.id = numberID();
         this.options = (options || options != undefined) ? options : { 
             log_console: false, 
             use_callbacks: false,
@@ -165,15 +170,17 @@ export class Logger {
 
     }
 
-    public getLoggerOptions(): LoggerOptions { return this.options; }
-    public setLoggerOptions(new_options: LoggerOptions) { this.options = new_options; }
+    public getOptions(): LoggerOptions { return this.options; }
+    public setOptions(new_options: LoggerOptions) { this.options = new_options; }
 
     public getLoggerColors(): LoggerColors { return this.options!.colors!; }
     public setLoggerColors(new_colors: LoggerColors) { this.options.colors = new_colors; }
 
+    public getBlacklistedEvents(): BlacklistedEvents { return this.options.blacklisted_events!; }
+    public setBlacklistedEvents(new_blacklisted: BlacklistedEvents) { this.options.blacklisted_events = new_blacklisted }
     
-    public getLogChannels(): TextChannel[] | undefined { return this.options.channels != undefined ? this.options.channels : undefined }
-    public setLogChannels(new_channels: TextChannel[]) { this.options.channels = new_channels }
+    public getChannels(): TextChannel[] | undefined { return this.options.channels != undefined ? this.options.channels : undefined }
+    public setChannels(new_channels: TextChannel[]) { this.options.channels = new_channels }
     public addLogChannel(new_channel: TextChannel) { this.options.channels = this.options.channels == undefined ? [] : this.options.channels;  this.options.channels?.push(new_channel); }  
     public getLoggingChannel(guild_or_channel_id: string): TextChannel | undefined {  
         let channel: TextChannel | undefined = this._findLoggingChannel(guild_or_channel_id);
@@ -238,7 +245,7 @@ export class Logger {
             userUpdate: false,
             voiceStateUpdate: false,
             warn: true,
-            webhookUpdate: true
+            webhookUpdate: true,
         }
     }
 
@@ -369,9 +376,47 @@ export class Logger {
     public /*set*/ addColor(color: string)    { if (this._hexError(color)) return; this.options.colors!.add = color;    }
     public /*set*/ removeColor(color: string) { if (this._hexError(color)) return; this.options.colors!.remove = color; }
 
+    public blacklist(...events: string[]) {
+        for (const event of events) {
+            for (let [key, value] of Object.entries(this.getBlacklistedEvents())) {
+                if (key == event && value == false) { 
+                    value = true; 
+                    this.getBlacklistedEvents()[key] = value;
+                }
+            }
+        }
+    }
+
+    public removeBlacklist(...events: string[]) {
+        for (const event of events) {
+            for (let [key, value] of Object.entries(this.getBlacklistedEvents())) {
+                if (key == event && value == true) { 
+                    value = false; 
+                    this.getBlacklistedEvents()[key] = value;
+                }
+            }
+        }       
+    }
+
+    //More user friendly than _isBlacklisted + _isBlacklisted is private + ...events
+    public isBlacklisted(...events: string[]): boolean[] | boolean {
+        let blacklisted: boolean[] = [];
+        for (const event of events) {
+            for (let [key, value] of Object.entries(this.getBlacklistedEvents())) {
+                if (key == event) { if (events.length == 1) { return value! } else { blacklisted.push(value!); }}
+            }
+        }
+        return blacklisted;
+    }
+
+    /**
+     * If you have multiple loggers (amount > 10) that call listen you will get a warning about execeeding max listeners and you may have to increase the max listeners or decrease the amount of loggers. Decreasing the amount of loggers is preferable
+     * 
+     * @param client The client to listen on
+     */
     public listen(client: Client) {
         if (this._LoggingConsole()) {
-            console.log(`[INFO]: Logger is listening on client events`);
+            console.log(`[INFO]: Logger ${this.id} is listening on client events`);
         }
 
         client.on('channelCreate', (channel: Channel) => {
