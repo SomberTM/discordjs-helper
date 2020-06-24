@@ -5,7 +5,9 @@ discordjs-helper includes many helpful functions and classes such as
 * **[pageReaction](https://www.npmjs.com/package/@sombertm/discordjs-helper#pagereactionmessageembedtoreactto-items-itemsperpage-startingpage)** -> Up and down arrow reactions on embeds
 * **[roleReaction](https://www.npmjs.com/package/@sombertm/discordjs-helper#rolereactionmessagetoreactto-emoji-role)** -> Give roles when users react
 * **[muteUser / unmuteUser](https://www.npmjs.com/package/@sombertm/discordjs-helper?activeTab=readme#muteuserto_mute-time_seconds-fn-mute_role)** -> Mute and unmute users easily
-* **[commandRegistry](https://www.npmjs.com/package/@sombertm/discordjs-helper?activeTab=readme#commandregistryaboslutecommandsfolderpath-registrytype)** Reads command files from provided directory
+* **[commandRegistry](https://www.npmjs.com/package/@sombertm/discordjs-helper?activeTab=readme#commandregistryaboslutecommandsfolderpath-registrytype)** -> Reads command files from 
+provided directory
+* **[Logger](https://www.npmjs.com/package/@sombertm/discordjs-helper#loggeroptions)** -> Full logger for each client event
 * etc...
 # Installation
 ```
@@ -287,12 +289,15 @@ registry.get('test').example();
 registry.grab('test', 'example')();
 ```
 ## Logger(options?)
-Will log client events to given channels
+Logs client events to given servers channels and the console | [source](https://github.com/SomberTM/discordjs-helper/blob/master/src/Logger.ts)
 ```javascript
 //Still using the template code from above
 
 //Colors should all be defined in hexadecimal
 const logger = new Logger({ log_console: true, colors: { info: '1c12f3', delete: 'b50d0d', create: '65af37' } });
+
+//Or if you dont want to mess with the options
+const logger = new Logger();
 
 client.on('ready', () => {
     //Arbitrarily getting some log channel
