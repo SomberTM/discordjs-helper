@@ -12,13 +12,10 @@ discordjs-helper includes many helpful functions and classes such as
 npm i @sombertm/discordjs-helper
 ```
 # Working On
-Currently Working on the Logger class
-* Logging to a given channel
-* Logging to the console
-* Colors for different logs
-* Ability to blacklist certain events
-* Will eventually cover 100% of the client events
-* Will also eventually have the ability to listen to events on its own (currently just functions that take event callbacks)
+All Client events for the logger are now available!
+-> Intend to add callback functionality to them
+
+Since the logger is near finished im probably going to be re-working the page-reaction and role-reaction as they kinda suck right now
 # Examples
 ###### This is the base code we will be using throughout the following examples. To see how to use certain functions skip ahead
 ```javascript
@@ -288,4 +285,101 @@ registry.get('test').example();
 
 //Grab a function from the registry by its name and call it
 registry.grab('test', 'example')();
+```
+## Logger(options?)
+Will log client events to given channels
+```javascript
+//Still using the template code from above
+
+//Colors should all be defined in hexadecimal
+const logger = new Logger({ log_console: true, colors: { info: '1c12f3', delete: 'b50d0d', create: '65af37' } });
+
+client.on('ready', () => {
+    //Arbitrarily getting some log channel
+    const guild = client.guilds.cache.find(guild => guild.name == 'test');
+    const log_channel = guild.channels.cache.find(channel => channel.name == 'logs')
+
+    //Add a log channel to the logger
+    //If an event comes up that pertains to that channels guild it will log to that channel
+    logger.addLogChannel(log_channel);
+
+    //Tell the logger to listen for us because we are lazy
+    logger.listen(client)
+})
+```
+## Logger Options / Types
+All the available options for the logger. Default values are assigned so you dont have to provide everything (There are default blacklisted events so dont worry about that)
+```javascript
+type LoggerOptions = {
+    log_console?: boolean,
+    channels?: TextChannel[] | undefined,
+    colors?: LoggerColors,
+    use_callbacks?: boolean,
+    blacklisted_events?: BlacklistedEvents
+};
+
+type LoggerColors = {
+    info?: string,
+    update?: string,
+    kick?: string,
+    ban?: string,
+    join?: string,
+    leave?: string,
+    delete?: string,
+    create?: string,
+    add?: string,
+    remove?: string,
+    default?: string
+}
+
+type BlacklistedEvents = {
+    channelCreate?: boolean,
+    channelDelete?: boolean,
+    channelPinsUpdate?: boolean,
+    channelUpdate?: boolean,
+    debug?: boolean,
+    emojiCreate?: boolean,
+    emojiDelete?: boolean,
+    emojiUpdate?: boolean,
+    error?: boolean,
+    guildBanAdd?: boolean,
+    guildBanRemove?: boolean,
+    guildCreate?: boolean,
+    guildDelete?: boolean,
+    guildIntegrationsUpdate?: boolean,
+    guildMemberAdd?: boolean,
+    guildMemberRemove?: boolean,
+    guildMembersChunk?: boolean,
+    guildMemberSpeaking?: boolean,
+    guildMemberUpdate?: boolean,
+    guildUnavailable?: boolean,
+    guildUpdate?: boolean,
+    invalidated?: boolean,
+    inviteCreate?: boolean,
+    inviteDelete?: boolean,
+    message?: boolean,
+    messageDelete?: boolean,
+    messageDeleteBulk?: boolean,
+    messageReactionAdd?: boolean,
+    messageReactionRemove?: boolean,
+    messageReactionRemoveAll?: boolean,
+    messageReactionRemoveEmoji?: boolean,
+    messageUpdate?: boolean,
+    presenceUpdate?: boolean,
+    rateLimit?: boolean,
+    ready?: boolean,
+    roleCreate?: boolean,
+    roleDelete?: boolean,
+    roleUpdate?: boolean,
+    shardDisconnect?: boolean,
+    shardError?: boolean,
+    shardReady?: boolean,
+    shardReconnecting?: boolean,
+    shardResume?: boolean,
+    typingStart?: boolean,
+    userUpdate?: boolean,
+    voiceStateUpdate?: boolean,
+    warn?: boolean,
+    webhookUpdate?: boolean
+}
 ```
