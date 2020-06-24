@@ -15,6 +15,7 @@ export * from './playYoutube';
 export * from './userToMember';
 export * from './muteUser';
 export * from './Logger';
+export * from './commandRegistry';
 
 //Utils
 export * from './utils/Queue';

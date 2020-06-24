@@ -15,6 +15,7 @@ import { GuildMember, Role, GuildChannel, Permissions, Guild } from "discord.js"
 
 export async function muteUser(to_mute: GuildMember, time_seconds: number, fn?: () => void, muteRole?: Role)
 {
+    //if (!to_mute.permissions.has('MUTE_MEMBERS')) return;
     if (!muteRole) {
         let mutedRole: Role | undefined = to_mute.guild.roles.cache.find((role: Role) => role.name == 'muted');
         if (mutedRole == undefined) {

@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { dir } from 'console';
 
 export type registryType =  {
     ts: string,
@@ -47,6 +48,10 @@ export class commandRegistry {
     set type(type: string) {
         this.registryType = type;
         this.initializeRegistry();
+    }
+
+    static createAbsolutePath(dirname: string, foldername: string): string {
+        return path.join(dirname, foldername);
     }
 
     private initializeRegistry() {
