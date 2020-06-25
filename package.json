@@ -1,0 +1,35 @@
+{
+  "name": "@sombertm/discordjs-helper",
+  "version": "2.1.2",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SomberTM/discordjs-helper.git"
+  },
+  "author": "Somber",
+  "license": "ISC",
+  "dependencies": {
+    "path": "^0.12.7",
+    "ytdl-core-discord": "^1.2.0"
+  },
+  "devDependencies": {
+    "@discordjs/opus": "^0.3.2",
+    "@types/node": "^14.0.13",
+    "discord.js": "^12.2.0",
+    "dotenv": "8.2.0",
+    "ffmpeg-static": "^4.2.2",
+    "typescript": "3.4.3"
+  },
+  "keywords": [
+    "discord.js",
+    "discordjs",
+    "discordjs-helper",
+    "discord.js-helper",
+    "discordjs-utils",
+    "discord.js-utils"
+  ]
+}
