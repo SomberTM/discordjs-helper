@@ -1,8 +1,5 @@
 import { EmojiIdentifierResolvable, Role, Message, GuildMember, MessageReaction, User, PartialUser, Client } from 'discord.js'
-
-let _client: Client;
-let initialized: boolean = false;
-let roleReactions: roleReaction[] = [];
+import { helper } from './index'; 
 
 /** CLASS : roleReaction
  * 
@@ -63,27 +60,7 @@ export class roleReaction
 
         this.message.react(this.emoji);
  
-        roleReactions.push(this);
-        
-        if (!initialized) { this.secondHandInit(); }
-    }
-
-    public static init(client: Client) {
-        _client = client;
-        console.log(`[INFO]: Role reactions initialized`);
-        listen();
-        initialized = true;
-    }
-
-    public static reactions(): roleReaction[] {
-      return roleReactions;
-    }
-
-    private secondHandInit() {
-        _client = this.message.client;
-        console.log(`[INFO]: Role reactions initialized`);
-        listen();     
-        initialized = true;
+        helper.emit('roleReactionCreate', this);
     }
 
     public addRole(member: GuildMember)
@@ -111,11 +88,6 @@ export class roleReaction
         for (let i = 0; i < this.reacted.length; i++) { if (this.reacted[i] == member) { this.reacted.splice(i, 1); }}
     }
 
-    public static help()
-    {
-        roleReactionHelp();
-    }
-
     get reactedUsers(): GuildMember[]
     {
       return this.reacted;
@@ -136,70 +108,4 @@ export class roleReaction
       return this.role;
     }
 
-}
-
-function listen() {
-  _client.on('messageReactionAdd', (messageReaction: MessageReaction, user: User | PartialUser) => {
-      if (user.bot) return;
-      roleReactions.forEach((reaction: roleReaction) => {
-        if (reaction.isReactedTo(messageReaction)) {
-          reaction.addRole(messageReaction.message.guild!.member(<User>user)!);
-        }
-      })
-  });
-
-  _client.on('messageReactionRemove', (messageReaction: MessageReaction, user: User | PartialUser) => {
-      if (user.bot) return;
-      roleReactions.forEach((reaction: roleReaction) => {
-        if (reaction.isReactedTo(messageReaction)) {
-          reaction.removeRole(messageReaction.message.guild!.member(<User>user)!);
-        }
-      })
-  }); 
-}
-
-function roleReactionHelp()
-{
-let help: string = 
-`\nroleReaction Class Help:\n
-Step 1: Storing roleReactions
-  -> let roleReactions = [];
-  ->
-  -> /* Inside Message Event */ <client>.on('message', (message) => { 
-    -> let args = getArgs(message, "!");
-    -> let cmd = getCommand(args);
-    ->
-    -> if (cmd == 'rr-add' || cmd == 'rr-create') {
-      -> if (!args[0] || !args[1] || !message.mentions.roles.first()) return; //If we dont have any of these values it wont work -> 
-      ->                                                                      //args[0] will be the message id for us to react to, args[1] will be the emoji, and message.mentions.roles.first() will be the role to be added upon reaction 
-      ->  
-      -> let messageToReactTo = await findMessage(message.channel, args[0]);
-      -> let emoji = args[1]; //Can be any emoji
-      -> let role = message.mentions.roles.first(); //Assuming a role was mentioned in the message
-      ->
-      -> roleReactions.push(new roleReaction(messageToReactTo, emoji, role));
-    -> }
-  -> })
-\n
-Step 2: The messageReactionAdd listener
-  -> <client>.on('messsageReactionAdd', (messageReaction, user) => {
-    ->   roleReactions.forEach((reaction) => { //Loop through all the saved reactions from step 1
-      ->     if (reaction.isReactedTo(messageReaction)) {  //Was this reaction reacted to?
-        ->       reaction.addRole( messageReaction.message.guild.member(user) ); //Converts the user to a guildmember and gives them this reactions role
-      ->     }  
-    ->   })
-  -> })
-\n
-Step 3: The messageReactionRemove listener
-  -> <client>.on('messsageReactionRemove', (messageReaction, user) => {
-    ->     roleReactions.forEach((reaction) => { //Loop through all the saved reactions from step 1
-      ->       if (reaction.isReactedTo(messageReaction)) {  //Was this reaction reacted to?
-        ->         reaction.removeRole( messageReaction.message.guild.member(user) ); //Converts the user to a guildmember and removes the role from the user thats tied to this reaciton
-      ->       }
-    ->     })
-  -> })
-\n
-This should help you with the setup for using this roleReaction class
-`
-console.log(help);
 }
