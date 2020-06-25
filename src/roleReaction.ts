@@ -1,5 +1,5 @@
 import { EmojiIdentifierResolvable, Role, Message, GuildMember, MessageReaction, User, PartialUser, Client } from 'discord.js'
-import { helper } from './index'; 
+import { events } from './index'; 
 
 /** CLASS : roleReaction
  * 
@@ -60,7 +60,7 @@ export class roleReaction
 
         this.message.react(this.emoji);
  
-        helper.emit('roleReactionCreate', this);
+        events.emit('roleReactionCreate', this);
     }
 
     public addRole(member: GuildMember)
@@ -87,7 +87,7 @@ export class roleReaction
     {
         for (let i = 0; i < this.reacted.length; i++) { if (this.reacted[i] == member) { this.reacted.splice(i, 1); }}
     }
-
+    
     get reactedUsers(): GuildMember[]
     {
       return this.reacted;

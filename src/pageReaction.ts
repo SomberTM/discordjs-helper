@@ -1,5 +1,5 @@
 import { Message, EmojiIdentifierResolvable, MessageReaction, User, PartialUser, MessageEmbed, Client } from 'discord.js'
-import { helper } from './index'; 
+import { events } from './index'; 
 
 export class pageReaction
 {
@@ -38,7 +38,7 @@ export class pageReaction
             this.message.react(this.upArrowEmoji);
             this.message.react(this.downArrowEmoji);
 
-            helper.emit('pageReactionCreate', this);
+            events.emit('pageReactionCreate', this);
         }
         
     }

@@ -1,11 +1,4 @@
-import { EventEmitter } from 'events';
-
-//Setup our main emitter
-class Helper extends EventEmitter {}
-const _helper: Helper = new Helper();
-
-//Main library
-export const helper: Helper = _helper;
+//Main library Exports
 export * from './pageReaction';
 export * from './roleReaction';
 export * from './getArgs';
@@ -13,6 +6,7 @@ export * from './getCommand';
 export * from './mentionChecks';
 export * from './findRole';
 export * from './findRoles';
+export * from './findMessage'
 export * from './findChannel';
 export * from './findChannels';
 export * from './joinVoiceChannel';
@@ -24,11 +18,18 @@ export * from './muteUser';
 export * from './Logger';
 export * from './commandRegistry';
 
-//Utils
+//Utils Exports
 export * from './utils/Queue';
 export * from './utils/isID';
 export * from './utils/DiscordChannel';
 export * from './utils/numberID';
+
+//Emitter Stuff
+import { EventEmitter } from 'events';
+
+class Helper extends EventEmitter {}
+const _helper: Helper = new Helper();
+export const events: Helper = _helper;
 
 //Event Stuff
 import { 
@@ -46,7 +47,7 @@ let reactionListenerCalled = false;
 let pageReactions: Array<pageReaction> = [];
 let roleReactions: Array<roleReaction> = [];
 
-helper.on('pageReactionCreate', (reaction: pageReaction) => {
+events.on('pageReactionCreate', (reaction: pageReaction) => {
     pageReactions.push(reaction);
     if (!reactionListenerCalled) {
         //yoink the client :>)
@@ -55,7 +56,7 @@ helper.on('pageReactionCreate', (reaction: pageReaction) => {
     }
 })
 
-helper.on('roleReactionCreate', (reaction: roleReaction) => {
+events.on('roleReactionCreate', (reaction: roleReaction) => {
     roleReactions.push(reaction);
     if (!reactionListenerCalled) {
         //yoink the client :>)
@@ -70,10 +71,12 @@ function ReactionListener() {
     client.on('messageReactionAdd', (reaction: MessageReaction, user: User | PartialUser) => {
         const castedUser:User=<User>user;
         pageReactions.forEach((preaction: pageReaction) => { preaction.updateAdd(reaction, castedUser) })
+        roleReactions.forEach((rreaction: roleReaction) => { if (rreaction.isReactedTo(reaction)) { rreaction.addRole(reaction.message.guild!.member(castedUser)!) } })
     });
 
     client.on('messageReactionRemove', (reaction: MessageReaction, user: User | PartialUser) => {
         const castedUser:User=<User>user;
         pageReactions.forEach((preaction: pageReaction) => { preaction.updateRemove(reaction, castedUser) })
+        roleReactions.forEach((rreaction: roleReaction) => { if (rreaction.isReactedTo(reaction)) { rreaction.removeRole(reaction.message.guild!.member(castedUser)!) } })
     });
 }
