@@ -1,12 +1,8 @@
 import { Message, EmojiIdentifierResolvable, MessageReaction, User, PartialUser, MessageEmbed, Client } from 'discord.js'
-
-let _client: Client;
-let initialized: boolean = false;
-let pageReactions: pageReaction[] = [];
+import { helper } from './index'; 
 
 export class pageReaction
 {
-
     public readonly message!: Message;
     public readonly upArrowEmoji!: EmojiIdentifierResolvable;
     public readonly downArrowEmoji!: EmojiIdentifierResolvable;
@@ -42,33 +38,12 @@ export class pageReaction
             this.message.react(this.upArrowEmoji);
             this.message.react(this.downArrowEmoji);
 
-            //this.update();
-
-            pageReactions.push(this);
-
-            if (!initialized) { this.secondHandInit(); }
+            helper.emit('pageReactionCreate', this);
         }
+        
     }
 
-    public static init(client: Client) {
-        _client = client;
-        console.log(`discordjs-helper -> [INFO]: Page reactions initialized`);
-        listen();
-        initialized = true;
-    }
-
-    public static reactions(): pageReaction[] {
-        return pageReactions;
-    }
-
-    private secondHandInit() {
-        _client = this.message.client;
-        console.log(`discordjs-helper -> [INFO]: Page reactions initialized`);
-        listen();
-        initialized = true;
-    }
-
-    public updateAdd(messageReaciton: MessageReaction, user: User | PartialUser)
+    public updateAdd(messageReaciton: MessageReaction, user: User)
     {
         if (user.bot) return;
 
@@ -76,19 +51,14 @@ export class pageReaction
         let mrID: string = messageReaciton.message.id;
         
         if (mrEmoji == this.upArrowEmoji.toString() && mrID == this.message.id ) {
-            //console.log(`Up arrow reacted to`);
             if (this.currentPageNumber > 0) {
                 this.currentPageNumber--;
-                this.checkZero();
                 this.embedToEdit.setDescription(this.formattedItems[this.currentPageNumber-1].map((item: any) => item));
                 this.message.edit(this.embedToEdit);
-            } else {
-                this.checkZero();
             }
         } 
 
         if (mrEmoji == this.downArrowEmoji.toString() && mrID == this.message.id) {
-            //console.log(`Down arrow reacted to`);
             if (this.currentPageNumber < this.pages) {
                 this.currentPageNumber++;
                 this.embedToEdit.setDescription(this.formattedItems[this.currentPageNumber-1].map((item: any) => item));
@@ -97,38 +67,26 @@ export class pageReaction
         }
     }
 
-    public updateRemove(messageReaciton: MessageReaction, user: User | PartialUser) {
+    public updateRemove(messageReaciton: MessageReaction, user: User) {
         if (user.bot) return;
 
         let mrEmoji: string = messageReaciton.emoji.toString();
         let mrID: string = messageReaciton.message.id;
         
         if (mrEmoji == this.upArrowEmoji.toString() && mrID == this.message.id ) {
-            //console.log(`Up arrow reacted to`);
             if (this.currentPageNumber > 0) {
                 this.currentPageNumber--;
-                this.checkZero();
                 this.embedToEdit.setDescription(this.formattedItems[this.currentPageNumber-1].map((item: any) => item));
                 this.message.edit(this.embedToEdit);
-            } else {
-                this.checkZero();
-            }
+            } 
         } 
 
         if (mrEmoji == this.downArrowEmoji.toString() && mrID == this.message.id) {
-            //console.log(`Down arrow reacted to`);
             if (this.currentPageNumber < this.pages) {
                 this.currentPageNumber++;
                 this.embedToEdit.setDescription(this.formattedItems[this.currentPageNumber-1].map((item: any) => item));
                 this.message.edit(this.embedToEdit);
             }
-        }
-    }
-
-    private checkZero()
-    {
-        if (this.currentPageNumber <= 0) {
-            this.currentPageNumber = 1;
         }
     }
 
@@ -143,25 +101,7 @@ export class pageReaction
             }
             formatted[j-1].push(this.rawItems[i]);
         }
-        //console.log(formatted);
         return formatted;
     }
 
-}
-
-function listen() {
-    console.log(`discordjs-helper -> [INFO]: Listening on page reactions`);
-    _client.on('messageReactionAdd', (messageReaction: MessageReaction, user: User | PartialUser) => {
-        if (user.bot) return;
-        pageReactions.forEach((reaction: pageReaction) => {
-            reaction.updateAdd(messageReaction, user);
-        })
-    });
-
-    _client.on('messageReactionRemove', (messageReaction: MessageReaction, user: User | PartialUser) => {
-        if (user.bot) return;
-        pageReactions.forEach((reaction: pageReaction) => {
-            reaction.updateRemove(messageReaction, user);
-        })
-    })
 }
