@@ -17,7 +17,7 @@
     "ytdl-core-discord": "^1.2.0"
   },
   "devDependencies": {
-    "@discordjs/opus": "^0.3.2",
+    "@discordjs/opus": "^0.8.0",
     "@types/node": "^14.0.13",
     "discord.js": "^12.2.0",
     "dotenv": "8.2.0",
